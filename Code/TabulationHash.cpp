@@ -7,19 +7,20 @@
 #include <bitset>
 #include <iostream>
 #include <sstream>
-#include <climits>
 
-#include <chrono>
 
 using namespace std;
 
 TabulationHash::TabulationHash(void)
 {
-	srand( time(NULL) );
-	for (HashEntry &entry : tabulationTable)
+	for (unsigned i = 0; i < stringLen; i++)
 	{
-		entry.hashValue = rand() % (1UL<<(sizeof(value_t) * 8) - 1);
-		// printf("%u\n", entry.hashValue);
+		srand( time(NULL) );
+		for (HashEntry &entry : tabulationTables[i])
+		{
+			entry.hashValue = rand() % (1UL<<(sizeof(value_t) * 8) - 1);
+			// printf("%u\n", entry.hashValue);
+		}
 	}
 }
 TabulationHash::~TabulationHash(void) {}
@@ -28,14 +29,14 @@ value_t TabulationHash::getHash(string key)
 {
 	value_t hashResult = 0;
 	hashResult = 0;
-	for (int i = 0; i < key.size(); i += char_length)
+	for (int i = 0; i < key.size(); i += charLength)
 	{
 		int index = 0;
-		for (int j = 0; j < char_length; j++)
+		for (int j = 0; j < charLength; j++)
 		{
 			index += ((int)key[i+j])<<(sizeof(char)*8*j);
 		}
-		hashResult ^= tabulationTable[index].hashValue;
+		hashResult ^= tabulationTables[i][index].hashValue;
 	}
 	// printf("%u\n", hashResult);
 
@@ -56,31 +57,4 @@ value_t TabulationHash::getHash(string key)
 	************************/	
 
 	return hashResult;
-}
-
-int main(void)
-{
-	// string hello = "Hell";
-	// cout << bitset<32>(hello) << endl;
-	TabulationHash *tabulationHash = new TabulationHash();
-	string key = "aasd";
-	
-	// WARMUP
-	for (unsigned i = 0; i < 100; i++)
-		value_t hashValue = tabulationHash->getHash(key);
-
-	unsigned amount = 1000;
-	
-	for (unsigned j = 0; j < 100; j++)
-	{
-		auto start = chrono::high_resolution_clock::now();
-
-		for (unsigned i = 0; i < amount; i++)
-			value_t hashValue = tabulationHash->getHash(key);
-		
-		auto end = chrono::high_resolution_clock::now();
-		std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>((end-start)/amount).count() << "ns\n";  
-	}
-	// for (auto hashEntry : tabulationHash->tabulationTable)
-		// printf("%u\n", hashEntry.hashValue);
 }

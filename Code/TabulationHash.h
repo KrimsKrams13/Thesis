@@ -13,12 +13,12 @@ struct HashEntry {
 class TabulationHash
 {
 private:
-    static const unsigned char_length = 1; // byte in each chunk of the key.
-    static const unsigned entries     = 2<<((char_length*8)-1);
-    static const unsigned table_size  = entries * sizeof(HashEntry);
-
+    static const unsigned charLength = 1; // byte in each chunk of the key.
+    static const unsigned entries    = 2<<((charLength*8)-1);
+    // static const unsigned tableSize  = entries * sizeof(HashEntry);
+    static const unsigned stringLen  = 16; 
 public:
-    HashEntry tabulationTable[entries];
+    HashEntry tabulationTables[stringLen][entries];
 
     TabulationHash();
     ~TabulationHash();
