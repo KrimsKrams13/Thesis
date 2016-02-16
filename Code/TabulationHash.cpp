@@ -1,25 +1,18 @@
 #include "TabulationHash.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include <bitset>
 #include <iostream>
-#include <sstream>
-
 
 using namespace std;
 
 TabulationHash::TabulationHash(void)
 {
+
+	srand(time(NULL));
 	for (unsigned i = 0; i < stringLen; i++)
 	{
-		srand( time(NULL) );
 		for (HashEntry &entry : tabulationTables[i])
 		{
-			entry.hashValue = rand() % (1UL<<(sizeof(value_t) * 8) - 1);
-			// printf("%u\n", entry.hashValue);
+			entry.hashValue = rand() % (1UL<<(sizeof(value_t) * 2) - 1);
 		}
 	}
 }
@@ -29,16 +22,16 @@ value_t TabulationHash::getHash(string key)
 {
 	value_t hashResult = 0;
 	hashResult = 0;
+	bool printendl = false;
 	for (int i = 0; i < key.size(); i += charLength)
 	{
-		int index = 0;
-		for (int j = 0; j < charLength; j++)
-		{
-			index += ((int)key[i+j])<<(sizeof(char)*8*j);
-		}
-		hashResult ^= tabulationTables[i][index].hashValue;
+		// int index = 0;
+		// for (int j = 0; j < charLength; j++)
+		// {
+			// index += ((int)key[i+j])<<(sizeof(char)*8*j);
+		// }
+		hashResult ^= tabulationTables[i][((int)(key[i] + 128))].hashValue; //Silly hack to solve signed char in string problem
 	}
-	// printf("%u\n", hashResult);
 
 	/************************
 	*** Use if c % 8 != 0 ***
