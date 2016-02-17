@@ -1,6 +1,7 @@
 #include "TabulationHash.h"
 
 #include <string>
+#include <chrono>
 #include <iostream>
 #include <algorithm>
 #include <climits>
@@ -95,7 +96,34 @@ string generateRandomStringExponential(unsigned len)
 
 void printSpreadStatistics(map<unsigned, int> hist)
 {
+  int    n   = hist.size(),
+         min = INT_MAX,
+         max = INT_MIN;
+  double mean,
+         var = 0.0,
+         sum = 0.0;
+  for(auto p : hist)
+  {
+    sum += (double)p.second();
+    if      (p.second() < min) min = p.second();
+    else if (p.second() > max) max = p.second();
+  }
 
+  mean = sum / n;
+
+  for(auto p : hist)
+  {
+    var += (p.second()-mean)*(p.second()-mean);
+  }
+
+  var /= n;
+
+  cout << "Variance: ";
+  cout << setprecision(5) << var << endl;
+  cout << "Mean: ";
+  cout << setprecision(5) << mean << endl;
+  cout << "Min value: " << min << endl;
+  cout << "Max value: " << max << endl;
 }
 
 int main()
@@ -103,11 +131,13 @@ int main()
 	TabulationHash *tabulationHash = new TabulationHash(16);
 
   map<unsigned, int> hist;
-  for(int n=0; n<10000; ++n) {
+  for(int n=0; n<10000; ++n)
+  {
 		value_t value = tabulationHash->getHash(generateRandomStringExponential(16));
     ++hist[value];
   }
-  for(auto p : hist) {
+  for(auto p : hist)
+  {
     cout << p.first << ' ' << string(p.second/5, '*') << '\n';
   }
   return 0;
