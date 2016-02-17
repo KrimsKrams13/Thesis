@@ -1,7 +1,6 @@
 #include "TabulationHash.h"
 
 #include <string>
-#include <chrono>
 #include <iostream>
 #include <algorithm>
 #include <climits>
@@ -17,7 +16,7 @@ string generateRandomStringUniform(unsigned len, unsigned minV = 0, unsigned max
 	uniform_int_distribution<> distribution(minV, maxV);
 	for (unsigned i = 0; i < len; i++)
 		res[i] = (unsigned char)distribution(generator);
-	
+
 	string resStr(res);
 	// cout << resStr;
 
@@ -42,7 +41,7 @@ string generateRandomStringGaussian(unsigned len, int sigma = 24, int mu = 128)
 	normal_distribution<> distribution(mu, sigma);
 	for (unsigned i = 0; i < len; i++)
 		res[i] = (unsigned char)(round(distribution(generator)));
-	
+
 	string resStr(res);
 	// cout << resStr;
 
@@ -71,7 +70,7 @@ string generateRandomStringExponential(unsigned len)
 	{
 		res[i] = (unsigned char)(round(distribution(generator)*(1<<CHAR_BIT)));
 	}
-	
+
 	string resStr(res);
 	// cout << resStr;
 
@@ -97,12 +96,11 @@ string generateRandomStringExponential(unsigned len)
 void printSpreadStatistics(map<unsigned, int> hist)
 {
 
-	return 0;
 }
 
 int main()
 {
-	TabulationHash *tabulationHash = new TabulationHash();
+	TabulationHash *tabulationHash = new TabulationHash(16);
 
   map<unsigned, int> hist;
   for(int n=0; n<10000; ++n) {
