@@ -1,20 +1,20 @@
-When hashing: 1keys, time spent per hashing: 2676ns.
-When hashing: 2keys, time spent per hashing: 489ns.
-When hashing: 4keys, time spent per hashing: 197ns.
-When hashing: 8keys, time spent per hashing: 170ns.
-When hashing: 16keys, time spent per hashing: 157ns.
-When hashing: 32keys, time spent per hashing: 85ns.
-When hashing: 64keys, time spent per hashing: 79ns.
-When hashing: 128keys, time spent per hashing: 80ns.
-When hashing: 256keys, time spent per hashing: 87ns.
-When hashing: 512keys, time spent per hashing: 77ns.
-When hashing: 1024keys, time spent per hashing: 78ns.
-When hashing: 2048keys, time spent per hashing: 66ns.
-When hashing: 4096keys, time spent per hashing: 67ns.
-When hashing: 8192keys, time spent per hashing: 67ns.
-When hashing: 16384keys, time spent per hashing: 66ns.
-When hashing: 32768keys, time spent per hashing: 67ns.
-When hashing: 65536keys, time spent per hashing: 66ns.
-When hashing: 131072keys, time spent per hashing: 66ns.
-When hashing: 262144keys, time spent per hashing: 67ns.
-When hashing: 524288keys, time spent per hashing: 66ns.
+When hashing: 1 keys, time spent per hashing: 2676 ns.
+When hashing: 2 keys, time spent per hashing: 489 ns.
+When hashing: 4 keys, time spent per hashing: 197 ns.
+When hashing: 8 keys, time spent per hashing: 170 ns.
+When hashing: 16 keys, time spent per hashing: 157 ns.
+When hashing: 32 keys, time spent per hashing: 85 ns.
+When hashing: 64 keys, time spent per hashing: 79 ns.
+When hashing: 128 keys, time spent per hashing: 80 ns.
+When hashing: 256 keys, time spent per hashing: 87 ns.
+When hashing: 512 keys, time spent per hashing: 77 ns.
+When hashing: 1024 keys, time spent per hashing: 78 ns.
+When hashing: 2048 keys, time spent per hashing: 66 ns.
+When hashing: 4096 keys, time spent per hashing: 67 ns.
+When hashing: 8192 keys, time spent per hashing: 67 ns.
+When hashing: 16384 keys, time spent per hashing: 66 ns.
+When hashing: 32768 keys, time spent per hashing: 67 ns.
+When hashing: 65536 keys, time spent per hashing: 66 ns.
+When hashing: 131072 keys, time spent per hashing: 66 ns.
+When hashing: 262144 keys, time spent per hashing: 67 ns.
+When hashing: 524288 keys, time spent per hashing: 66 ns.
