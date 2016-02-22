@@ -31,8 +31,6 @@ tabulation_hash::tabulation_hash(uint8_t _max_key_len)
 {
 	max_key_len = _max_key_len;
 
-  std::mt19937 generator(time(NULL));
-
 	// Initialize the tables to fit the given maximum string length.
 	tabulation_tables = new value_t*[max_key_len];
 	for (uint8_t i = 0; i < max_key_len; i++)
@@ -45,7 +43,6 @@ tabulation_hash::tabulation_hash(uint8_t _max_key_len)
 	// IF the max string length is shorter than the amount of random tables, use those.
 	if (max_key_len <= tts_rows)
 	{
-		max_hash_value = (1UL << 32) - 1;
 		for (uint8_t i = 0; i < max_key_len; i++)
 		{
 			for (uint16_t j = 0; j < tts_cols; j++)
@@ -57,12 +54,15 @@ tabulation_hash::tabulation_hash(uint8_t _max_key_len)
 	// Otherwise, calculate table entries using pseudorandom generator.
 	else
 	{
-		max_hash_value = (1UL<<(sizeof(value_t) * 8) - 1); // constant thing defined. [?!]
+		std::random_device rd;
+  	std::mt19937 generator(rd());
+		std::uniform_int_distribution<value_t> distribution(0, max_hash_value);
+
 		for (uint8_t i = 0; i < max_key_len; i++)
 		{
 			for (uint16_t j = 0; j < tts_cols; j++)
 			{
-				tabulation_tables[i][j] = generator() % max_hash_value; // Use distribution [?!]
+				tabulation_tables[i][j] = distribution(generator);
 			}
 		}
 	}
@@ -75,7 +75,7 @@ tabulation_hash::~tabulation_hash(void)
 	delete[] tabulation_tables;
 }
 
-uint32_t tabulation_hash::get_max_hash_value()
+value_t tabulation_hash::get_max_hash_value()
 {
 	return max_hash_value;
 }
@@ -98,6 +98,7 @@ value_t tabulation_hash::get_hash(std::string key)
 	for (uint8_t i = 0; i < key.size(); i++)
 	{
 		hash_result ^= tabulation_tables[i][ukey[i]];
+		// std::cout << i << ": " << ukey[i] << ": " <<  tabulation_tables[i][ukey[i]] << std::endl;
 	}
 	return hash_result;
 }
