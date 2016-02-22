@@ -3,33 +3,28 @@
 
 #include <climits>
 #include <string>
-#include <stdint.h>
+#include <cstdint>
 
-using namespace std;
-
+    
 typedef uint32_t value_t;
 
-struct HashEntry {
-    value_t hashValue;
-};
-
-class TabulationHash
+// Write abstract class [?!] - all methods pure virtual - separate header file.
+class tabulation_hash
 {
 private:
-    static const unsigned charLength = 1; // byte in each chunk of the key.
-    static const unsigned entries    = 1<<(charLength*CHAR_BIT);
-    static const unsigned tableRows  = 16;
-    static const unsigned tableCols  = 256;
-    static const value_t tableValues[][tableCols];
-    HashEntry **tabulationTables;
-    unsigned maxStrLen;
-    unsigned maxHashValue;
-    value_t hashResult;
-public:
+    // Chunksize fixed to 8 bits [?!]
+    static const uint8_t entries = UCHAR_MAX;
+    static const uint8_t table_rows = 16;
+    static const uint16_t table_cols = 256;
+    static const value_t table_values[][table_cols];
+    value_t **tabulation_tables;
+    uint8_t  max_key_len;
+    uint32_t max_hash_value;
 
-    TabulationHash(unsigned maxStrLen);
-    ~TabulationHash();
-    value_t getHash(string key);
-    unsigned getMaxHashValue();
+public:
+    tabulation_hash(uint8_t max_key_len);
+    ~tabulation_hash();
+    value_t get_hash(std::string key);
+    uint32_t get_max_hash_value();
 };
 #endif

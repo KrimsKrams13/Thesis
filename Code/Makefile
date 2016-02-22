@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -std=c++11
+CFLAGS=-c -std=c++11 -O3
 LDFLAGS=
 SOURCES=TabulationHashTest.cpp TabulationHash.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
