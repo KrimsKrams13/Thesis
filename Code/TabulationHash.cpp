@@ -60,12 +60,12 @@ value_t tabulation_hash<16>::tabulation_tables[16][table_cols] =
 };
 
 template<>
-tabulation_hash<1>::tabulation_hash(){ max_key_len = 1; };
+tabulation_hash<1>::tabulation_hash() : abstract_hash(1) {};
 template<>
-tabulation_hash<2>::tabulation_hash(){ max_key_len = 2; };
+tabulation_hash<2>::tabulation_hash() : abstract_hash(2) {};
 template<>
-tabulation_hash<4>::tabulation_hash(){ max_key_len = 4; };
+tabulation_hash<4>::tabulation_hash() : abstract_hash(4) {};
 template<>
-tabulation_hash<8>::tabulation_hash(){ max_key_len = 8; };
+tabulation_hash<8>::tabulation_hash() : abstract_hash(8) {};
 template<>
-tabulation_hash<16>::tabulation_hash(){ max_key_len = 16; };
+tabulation_hash<16>::tabulation_hash() : abstract_hash(16) {};

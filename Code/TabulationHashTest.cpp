@@ -290,11 +290,11 @@ int main()
 	// Calculating the tables for the tabulation
 	tabulation_hash<max_key_len> *tabulation_h = new tabulation_hash<max_key_len>();
 
-	// test_uniform(tabulation_h, 1000000, 63);
-	// test_gaussian(tabulation_h, 1000000, 63);
-	// test_exponential(tabulation_h, 1000000, 63);
-	// test_amount_performance(tabulation_h, 10000000, 4);
-	test_length_performance<max_key_len>(tabulation_h, 10000000, 31);
+	// test_uniform(tabulation_h, 1000000, key_len);
+	// test_gaussian(tabulation_h, 1000000, key_len);
+	// test_exponential(tabulation_h, 1000000, key_len);
+	// test_amount_performance(tabulation_h, 10000000, key_len);
+	// test_length_performance<max_key_len>(tabulation_h, 10000000, 31);
 
   return 0;
 }

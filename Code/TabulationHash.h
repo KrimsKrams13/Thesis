@@ -7,27 +7,22 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cassert>
+#include "AbstractHash.h"
 
-typedef uint32_t value_t;
 
-// Write abstract class [?!] - all methods pure virtual - separate header file.
 template<int I>
-class tabulation_hash
+class tabulation_hash : abstract_hash
 {
 private:
     // Chunksize fixed to 8 bits 
     static const uint8_t entries = UCHAR_MAX;
     static const uint16_t table_cols = 256;
-    static const value_t max_hash_value = (1UL<<(sizeof(value_t) * 8) - 1);
 
-    uint8_t max_key_len;
     static value_t tabulation_tables[I][table_cols];
 
 public:
-    tabulation_hash<I>()
-    {
-      max_key_len = I;
-      
+    tabulation_hash<I>() : abstract_hash(I)
+    {      
       // Setup tabulation tables, used for the hashing.
       uint16_t tts_cols = (sizeof(tabulation_tables[0])/sizeof(tabulation_tables[0][0]));
 
