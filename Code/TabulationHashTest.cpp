@@ -130,7 +130,8 @@ void print_spread_statistics(std::map<uint64_t, uint32_t> hist)
 /**
  * Tests the spread of the hashValues, using Uniformly distributed keys.
  */
-void test_uniform(tabulation_hash *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<int I>
+void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
 	// Pre-generating the strings, to only read time of actual hashing
 	std::string* keys = new std::string[iterations];
@@ -158,7 +159,8 @@ void test_uniform(tabulation_hash *tabulation_hash, uint32_t iterations, uint8_t
 /**
  * Tests the spread of the hashValues, using Normally distributed keys.
  */
-void test_gaussian(tabulation_hash *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<int I>
+void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
 	// Pre-generating the strings, to only read time of actual hashing
 	std::string* keys = new std::string[iterations];
@@ -186,7 +188,8 @@ void test_gaussian(tabulation_hash *tabulation_hash, uint32_t iterations, uint8_
 /**
  * Tests the spread of the hashValues, using exponentially distributed keys.
  */
-void test_exponential(tabulation_hash *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<int I>
+void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
 	// Pre-generating the strings, to only read time of actual hashing
 	std::string* keys = new std::string[iterations];
@@ -215,7 +218,8 @@ void test_exponential(tabulation_hash *tabulation_hash, uint32_t iterations, uin
  * Tests the performance of the hashing, over different hash amounts, using normally distributed keys.
  * Returns the total amount of nanoseconds spent.
  */
-void test_amount_performance(tabulation_hash *tabulation_hash, uint32_t max_amount, uint8_t key_len)
+template<int I>
+void test_amount_performance(tabulation_hash<I> *tabulation_hash, uint32_t max_amount, uint8_t key_len)
 {
 	using namespace std::chrono;
 
@@ -247,7 +251,8 @@ void test_amount_performance(tabulation_hash *tabulation_hash, uint32_t max_amou
  * Tests the performance of the hashing, over different string lengths, using normally distributed keys.
  * Returns the total amount of nanoseconds spent.
  */
-void test_length_performance(tabulation_hash *tabulation_hash, uint32_t amount, uint8_t max_str_len)
+template<int I>
+void test_length_performance(tabulation_hash<I> *tabulation_hash, uint32_t amount, uint8_t max_str_len)
 {
 	using namespace std::chrono;
 
@@ -277,14 +282,19 @@ void test_length_performance(tabulation_hash *tabulation_hash, uint32_t amount, 
 
 int main()
 {
+	const int max_key_len = 32;
+	const int key_len = 31;
+	if (max_key_len < key_len)
+		throw std::invalid_argument("Key length has to be smaller than " + std::to_string(max_key_len) + ".");
+
 	// Calculating the tables for the tabulation
-	tabulation_hash *tabulation_h = new tabulation_hash(64);
+	tabulation_hash<max_key_len> *tabulation_h = new tabulation_hash<max_key_len>();
 
 	// test_uniform(tabulation_h, 1000000, 63);
 	// test_gaussian(tabulation_h, 1000000, 63);
 	// test_exponential(tabulation_h, 1000000, 63);
 	// test_amount_performance(tabulation_h, 10000000, 4);
-	test_length_performance(tabulation_h, 100000000, 63);
+	test_length_performance<max_key_len>(tabulation_h, 10000000, 31);
 
   return 0;
 }
