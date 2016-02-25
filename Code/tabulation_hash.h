@@ -1,5 +1,5 @@
-#ifndef TabulationHash_h
-#define TabulationHash_h
+#ifndef tabulation_hash_h
+#define tabulation_hash_h
 
 #include <climits>
 #include <string>
@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cassert>
-#include "AbstractHash.h"
+#include "abstract_hash.h"
 
 
 template<int I>

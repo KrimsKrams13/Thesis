@@ -1,4 +1,4 @@
-#include "TabulationHash.h"
+#include "tabulation_hash.h"
 
 #include <iostream>
 #include <ctime>

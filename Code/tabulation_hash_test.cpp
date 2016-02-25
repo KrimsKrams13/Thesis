@@ -1,4 +1,4 @@
-#include "TabulationHash.h"
+#include "tabulation_hash.h"
 
 #include <string>
 #include <chrono>
@@ -152,7 +152,8 @@ void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint
 
   	// Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
-    std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    // std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    std::cout << i << ": " << intervals[i] << std::endl;
   print_spread_statistics(hist);
 }
 
@@ -162,12 +163,12 @@ void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint
 template<int I>
 void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
-	// Pre-generating the strings, to only read time of actual hashing
-	std::string* keys = new std::string[iterations];
-	for(uint32_t i=0; i < iterations; i++)
-		keys[i] = generate_random_string_gaussian(key_len);
+  // Pre-generating the strings, to only read time of actual hashing
+  std::string* keys = new std::string[iterations];
+  for(uint32_t i=0; i < iterations; i++)
+    keys[i] = generate_random_string_gaussian(key_len);
 
-	// Calculating the hashing
+  // Calculating the hashing
   std::map<uint64_t, uint32_t> hist;
   for(uint32_t i=0; i < iterations; i++)
     ++hist[tabulation_hash->get_hash(keys[i])];
@@ -175,13 +176,14 @@ void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uin
   // Calculating statistics on the found hashes.
   uint16_t interval_amount = 256;
   uint32_t intervals[interval_amount] = {0};
-  	// Creating intervals for 'readable' histogram
+    // Creating intervals for 'readable' histogram
   for(auto p : hist)
-  	intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
+    intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
 
-  	// Printing histogram results
+    // Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
-    std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    // std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    std::cout << i << ": " << intervals[i] << std::endl;
   print_spread_statistics(hist);
 }
 
@@ -191,12 +193,12 @@ void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uin
 template<int I>
 void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
-	// Pre-generating the strings, to only read time of actual hashing
-	std::string* keys = new std::string[iterations];
-	for(uint32_t i=0; i < iterations; i++)
-		keys[i] = generate_random_string_exponential(key_len);
+  // Pre-generating the strings, to only read time of actual hashing
+  std::string* keys = new std::string[iterations];
+  for(uint32_t i=0; i < iterations; i++)
+    keys[i] = generate_random_string_exponential(key_len);
 
-	// Calculating the hashing
+  // Calculating the hashing
   std::map<uint64_t, uint32_t> hist;
   for(uint32_t i=0; i < iterations; i++)
     ++hist[tabulation_hash->get_hash(keys[i])];
@@ -204,13 +206,14 @@ void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, 
   // Calculating statistics on the found hashes.
   uint16_t interval_amount = 256;
   uint32_t intervals[interval_amount] = {0};
-  	// Creating intervals for 'readable' histogram
+    // Creating intervals for 'readable' histogram
   for(auto p : hist)
-  	intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
+    intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
 
-  	// Printing histogram results
+    // Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
-    std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    // std::cout << i << ' ' << std::string(intervals[i]/(iterations/(32*interval_amount)), '*') << ' ' << intervals[i] << std::endl;
+    std::cout << i << ": " << intervals[i] << std::endl;
   print_spread_statistics(hist);
 }
 
@@ -282,8 +285,8 @@ void test_length_performance(tabulation_hash<I> *tabulation_hash, uint32_t amoun
 
 int main()
 {
-	const int max_key_len = 32;
-	const int key_len = 31;
+	const uint8_t max_key_len = 32;
+	const uint8_t key_len = 32;
 	if (max_key_len < key_len)
 		throw std::invalid_argument("Key length has to be smaller than " + std::to_string(max_key_len) + ".");
 
@@ -291,10 +294,10 @@ int main()
 	tabulation_hash<max_key_len> *tabulation_h = new tabulation_hash<max_key_len>();
 
 	// test_uniform(tabulation_h, 1000000, key_len);
-	// test_gaussian(tabulation_h, 1000000, key_len);
+	test_gaussian(tabulation_h, 1000000, key_len);
 	// test_exponential(tabulation_h, 1000000, key_len);
 	// test_amount_performance(tabulation_h, 10000000, key_len);
-	// test_length_performance<max_key_len>(tabulation_h, 10000000, 31);
+	// test_length_performance<max_key_len>(tabulation_h, 10000000, key_len);
 
   return 0;
 }

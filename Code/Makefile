@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-c -std=c++11 -O3
 LDFLAGS=
-SOURCES=TabulationHashTest.cpp TabulationHash.cpp
+SOURCES=tabulation_hash_test.cpp tabulation_hash.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=run
 
