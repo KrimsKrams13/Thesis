@@ -130,8 +130,8 @@ void print_spread_statistics(std::map<uint64_t, uint32_t> hist)
 /**
  * Tests the spread of the hashValues, using Uniformly distributed keys.
  */
-template<int I>
-void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<typename value_t, std::uint8_t num_tables>
+void test_uniform(multicore_hash::tabulation_hash<value_t, num_tables> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
 	// Pre-generating the strings, to only read time of actual hashing
 	std::string* keys = new std::string[iterations];
@@ -148,7 +148,7 @@ void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint
   uint32_t intervals[interval_amount] = {0};
   	// Creating intervals for 'readable' histogram
   for(auto p : hist)
-  	intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
+    intervals[p.first/(std::numeric_limits<value_t>::max()/interval_amount)] += p.second;
 
   	// Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
@@ -160,8 +160,8 @@ void test_uniform(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint
 /**
  * Tests the spread of the hashValues, using Normally distributed keys.
  */
-template<int I>
-void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<typename value_t, std::uint8_t num_tables>
+void test_gaussian(multicore_hash::tabulation_hash<value_t, num_tables> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
   // Pre-generating the strings, to only read time of actual hashing
   std::string* keys = new std::string[iterations];
@@ -178,7 +178,7 @@ void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uin
   uint32_t intervals[interval_amount] = {0};
     // Creating intervals for 'readable' histogram
   for(auto p : hist)
-    intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
+    intervals[p.first/(std::numeric_limits<value_t>::max()/interval_amount)] += p.second;
 
     // Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
@@ -190,8 +190,8 @@ void test_gaussian(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uin
 /**
  * Tests the spread of the hashValues, using exponentially distributed keys.
  */
-template<int I>
-void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, uint8_t key_len)
+template<typename value_t, std::uint8_t num_tables>
+void test_exponential(multicore_hash::tabulation_hash<value_t, num_tables> *tabulation_hash, uint32_t iterations, uint8_t key_len)
 {
   // Pre-generating the strings, to only read time of actual hashing
   std::string* keys = new std::string[iterations];
@@ -208,7 +208,7 @@ void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, 
   uint32_t intervals[interval_amount] = {0};
     // Creating intervals for 'readable' histogram
   for(auto p : hist)
-    intervals[p.first/(tabulation_hash->get_max_hash_value()/interval_amount)] += p.second;
+    intervals[p.first/(std::numeric_limits<value_t>::max()/interval_amount)] += p.second;
 
     // Printing histogram results
   for (uint16_t i = 0; i < 256; i++)
@@ -221,8 +221,8 @@ void test_exponential(tabulation_hash<I> *tabulation_hash, uint32_t iterations, 
  * Tests the performance of the hashing, over different hash amounts, using normally distributed keys.
  * Returns the total amount of nanoseconds spent.
  */
-template<int I>
-void test_amount_performance(tabulation_hash<I> *tabulation_hash, uint32_t max_amount, uint8_t key_len)
+template<typename value_t, std::uint8_t num_tables>
+void test_amount_performance(multicore_hash::tabulation_hash<value_t, num_tables> *tabulation_hash, uint32_t max_amount, uint8_t key_len)
 {
 	using namespace std::chrono;
 
@@ -254,50 +254,58 @@ void test_amount_performance(tabulation_hash<I> *tabulation_hash, uint32_t max_a
  * Tests the performance of the hashing, over different string lengths, using normally distributed keys.
  * Returns the total amount of nanoseconds spent.
  */
-template<int I>
-void test_length_performance(tabulation_hash<I> *tabulation_hash, uint32_t amount, uint8_t max_str_len)
+template<typename value_t, std::uint8_t num_tables>
+void test_length_performance(multicore_hash::tabulation_hash<value_t, num_tables> *tabulation_hash, uint32_t amount, uint8_t max_str_len)
 {
 	using namespace std::chrono;
 
+  long time_sum[num_tables] = {0};
 	// Warmup
 	auto start = high_resolution_clock::now();
 	generate_random_string_uniform(1);
 	auto end = high_resolution_clock::now();
 
+  uint8_t its = 100;
 	// Testing
 	std::string* keys = new std::string[amount];
-	for (uint8_t key_len = 1; key_len <= max_str_len; key_len++)
-	{
-			// Pre-generating the strings, to only read time of actual hashing
-		for(uint32_t i = 0; i < amount; i++)
-			keys[i] = generate_random_string_uniform(key_len);
+  for (uint8_t i = 0; i < its; i++)
+    for (uint8_t key_len = 1; key_len <= max_str_len; key_len++)
+    {
+        // Pre-generating the strings, to only read time of actual hashing
+      for(uint32_t i = 0; i < amount; i++)
+        keys[i] = generate_random_string_uniform(key_len);
 
-		// Calculating the hashing
-		auto start = high_resolution_clock::now();
-	  for(uint32_t i = 0; i < amount; i++)
-	    tabulation_hash->get_hash(keys[i]);
-		auto end = high_resolution_clock::now();
-		// std::cout << "When hashing " << amount << " keys of length: " << std::to_string(key_len) << ", time spent per hashing: " 
-		std::cout << std::to_string(key_len) << ": " << duration_cast<nanoseconds>((end-start)/amount).count() << std::endl;
-	}
+      // Calculating the hashing
+      auto start = high_resolution_clock::now();
+      for(uint32_t i = 0; i < amount; i++)
+        tabulation_hash->get_hash(keys[i]);
+      auto end = high_resolution_clock::now();
+      // std::cout << "When hashing " << amount << " keys of length: " << std::to_string(key_len) << ", time spent per hashing: " 
+      // std::cout << std::to_string(key_len) << ": " << duration_cast<nanoseconds>((end-start)/amount).count() << std::endl;
+      time_sum[key_len] += duration_cast<nanoseconds>((end-start)/amount).count();
+    }
+  for (uint8_t key_len = 1; key_len <= max_str_len; key_len++)
+      std::cout << std::to_string(key_len) << ": " << time_sum[key_len]/its << std::endl;
+
 	delete[] keys;
 }
 
 int main()
 {
-	const uint8_t max_key_len = 32;
-	const uint8_t key_len = 32;
+	const uint8_t max_key_len = 16;
+	const uint8_t key_len = 16;
 	if (max_key_len < key_len)
 		throw std::invalid_argument("Key length has to be smaller than " + std::to_string(max_key_len) + ".");
 
 	// Calculating the tables for the tabulation
-	tabulation_hash<max_key_len> *tabulation_h = new tabulation_hash<max_key_len>();
+	multicore_hash::tabulation_hash<std::uint32_t, max_key_len> *tabulation_hash = 
+  new multicore_hash::tabulation_hash<std::uint32_t, max_key_len>();
 
-	// test_uniform(tabulation_h, 1000000, key_len);
-	test_gaussian(tabulation_h, 1000000, key_len);
-	// test_exponential(tabulation_h, 1000000, key_len);
-	// test_amount_performance(tabulation_h, 10000000, key_len);
-	// test_length_performance<max_key_len>(tabulation_h, 10000000, key_len);
+	// test_uniform(tabulation_hash, 1000000, key_len);
+	// test_gaussian(tabulation_hash, 1000000, key_len);
+	// test_exponential(tabulation_hash, 1000000, key_len);
+	// test_amount_performance(tabulation_hash, 10000000, key_len);
+	test_length_performance<std::uint32_t,max_key_len>(tabulation_hash, 100000, key_len);
 
   return 0;
 }
