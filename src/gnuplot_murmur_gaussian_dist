@@ -1,0 +1,3 @@
+plot 'Results/Murmur_gaussian_dist.txt' with linespoints, 3906.2
+
+
