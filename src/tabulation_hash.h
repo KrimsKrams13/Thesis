@@ -6,20 +6,24 @@
 #include <cstdint>
 #include <algorithm>
 #include <random>
+#include <memory>
 #include <stdexcept>
 #include <cassert>
 #include "abstract_hash.h"
 
+#define CACHE_LINE_SIZE 64
+#define CACHE_ALIGN __attribute__((__aligned__(CACHE_LINE_SIZE)))
 
 namespace multicore_hash {
-
-  
-
   template<typename value_t = std::uint32_t, std::uint8_t _num_tables = 1>
   class tabulation_hash : public abstract_hash<value_t> {
   private:
+    struct tabulation_value {
+      value_t value;
+    } CACHE_ALIGN;
+
     // Chunksize fixed to 8 bits 
-    value_t tabulation_tables[_num_tables][std::numeric_limits<std::uint8_t>::max()];
+    tabulation_value tabulation_tables[_num_tables][std::numeric_limits<std::uint8_t>::max()];
     // This array should only be loaded to the smallest extend possible.
     // I.e., if _num_tables = 4, only load first four rows into memory.
     uint8_t num_tables;
@@ -45,18 +49,18 @@ namespace multicore_hash {
     tabulation_hash() {
       num_tables = _num_tables;
 
-      if (num_tables <= 16)
-      {
-        for (uint8_t i = 0; i < num_tables; i++)
-        {
-          for (uint16_t j = 0; j < std::numeric_limits<std::uint8_t>::max(); j++)
-          {
-            tabulation_tables[i][j] = tabulation_values[i][j];
-          }
-        }
-      }
-      else
-      {
+      // if (num_tables <= 16)
+      // {
+      //   for (uint8_t i = 0; i < num_tables; i++)
+      //   {
+      //     for (uint16_t j = 0; j < std::numeric_limits<std::uint8_t>::max(); j++)
+      //     {
+      //       tabulation_tables[i][j].value = tabulation_values[i][j];
+      //     }
+      //   }
+      // }
+      // else
+      // {
         std::random_device rd;
         std::mt19937 generator(rd());
         std::uniform_int_distribution<value_t> distribution(0, std::numeric_limits<value_t>::max());
@@ -65,10 +69,10 @@ namespace multicore_hash {
         {
           for (uint16_t j = 0; j < std::numeric_limits<std::uint8_t>::max(); j++)
           {
-            tabulation_tables[i][j] = distribution(generator);
+            tabulation_tables[i][j].value = distribution(generator);
           }
         }
-      }
+      // }
     }
     
 
@@ -84,7 +88,7 @@ namespace multicore_hash {
       auto ukey = reinterpret_cast<const uint8_t*> (key.c_str());
       value_t hash_result = 0;
       for (uint8_t i = 0; i < key.size(); i++) {
-        hash_result ^= tabulation_tables[i][ukey[i%num_tables]];
+        hash_result ^= tabulation_tables[i%num_tables][ukey[i]].value;
       }
       return hash_result;
     }

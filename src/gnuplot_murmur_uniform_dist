@@ -1,4 +1,0 @@
-set xrange [0:255]
-plot 'Results/Murmur_uniform_dist.txt' with linespoints, 3906.2 
-
-

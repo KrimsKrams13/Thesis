@@ -1,0 +1,29 @@
+reset
+
+# Specify hash type and test type
+if (!exists("hash")) hash = 'Tabulation'
+if (!exists("test")) test = 'uniform'
+
+# Set output image position
+set term png enhanced
+set output sprintf('../doc/Graphs/Dist/%s_%s_dist.png', hash, test)
+
+# Setup labels and legend
+set xlabel "Amount / bin"
+set ylabel "Bin number"
+set key box opaque
+set border back
+
+# Calculating stats from file
+stats sprintf('Results/Distribution/%s_%s_dist.txt', hash, test) every ::1 using 2 nooutput
+amount  = int(STATS_records)
+mean    = int(STATS_mean)
+max     = int(STATS_max)
+std_dev = real(STATS_stddev)
+
+# Making plot
+set xrange [0:amount]
+set yrange [0:mean*1.25]
+plot sprintf('Results/Distribution/%s_%s_dist.txt', hash, test) with lines title sprintf("%s Input Distribution (Std.Dev=%.2f)", test, std_dev), mean title sprintf("Mean=%d", mean)
+
+

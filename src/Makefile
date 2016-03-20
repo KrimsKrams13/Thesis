@@ -1,6 +1,8 @@
+NUM_TABLES=-1
+
 CC=g++
-CFLAGS=-c -std=c++11 -O3
-LDFLAGS=
+CFLAGS=-c -std=c++11 -O3 -D NUM_TABLES_DEF=$(NUM_TABLES)
+LDFLAGS= -pthread 
 SOURCES=tabulation_hash_test.cpp tabulation_hash.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=run

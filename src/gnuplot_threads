@@ -1,0 +1,31 @@
+reset
+
+# Specify hash type and test type
+name = "throughput_per_thread"
+
+# Set output image position
+set term png enhanced
+set output sprintf('../doc/Graphs/Throughput/%s.png', name)
+
+# Setup labels and legend
+set xlabel "Amount of threads run"
+set ylabel "Throughput per thread (hashes / second)"
+set key box opaque
+set border back
+
+# Calculating stats from file
+stats sprintf('Results/%s.txt', name) every ::1 using 2 nooutput
+amount  = int(STATS_records)
+max     = int(STATS_max)
+
+stats sprintf('Results/%s.txt', name) every ::::0 using 2 nooutput
+first   = int(STATS_min)
+
+f(x) = first*x
+
+# Making plot
+set xrange [0:amount+1]
+set yrange [0:max*amount]
+plot sprintf('Results/%s.txt', name) title "Throughput Per Thread" w linespoints,\
+	'' using 1:($1*$2) title "Total Throughput" w linespoints,\
+	f(x) title "Optimal Total Throughput"

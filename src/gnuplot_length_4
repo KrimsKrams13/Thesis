@@ -1,0 +1,35 @@
+reset
+
+# Specify hash type and test type
+if (!exists("hash")) hash     = 'Tabulation'
+if (!exists("tables")) tables = 1
+
+if (hash eq 'Tabulation') name = sprintf('Tabulation%d_length', tables); else name = sprintf('%s_length', hash)
+
+# Set output image position
+set term png enhanced
+set output sprintf('../doc/Graphs/Length/4_%s.png', name)
+
+# Setup labels and legend
+set xlabel "Length of keys (Bytes)"
+set ylabel "Time per hash (ns)"
+set key left top box opaque
+set border back
+
+# Calculating stats from file
+#stats sprintf('Results/%s.txt', name) every ::1 using 2 nooutput
+#amount  = int(STATS_records)
+#mean    = int(STATS_mean)
+#max     = int(STATS_max)
+#std_dev = real(STATS_stddev)
+
+# Making plot
+set xrange [0:64]
+plot 'Results/Length/Tabulation1_length.txt' title 'Numtables=1' with errorbars lt rgb "red", \
+	 '' notitle with lines lt rgb "red", \
+	 'Results/Length/Tabulation8_length.txt' title 'Numtables=8' with errorbars lt rgb "green", \
+	 '' notitle with lines lt rgb "green", \
+	 'Results/Length/Tabulation32_length.txt' title 'Numtables=32' with errorbars lt rgb "blue", \
+	 '' notitle with lines lt rgb "blue", \
+	 'Results/Length/Tabulation64_length.txt' title 'Numtables=64' with errorbars lt rgb "purple", \
+	 '' notitle with lines lt rgb "purple"

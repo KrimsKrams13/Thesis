@@ -1,0 +1,34 @@
+reset
+
+# Specify hash type and test type
+if (!exists("hash")) hash     = 'Tabulation'
+if (!exists("tables")) tables = 64
+
+if (hash eq 'Tabulation') name = sprintf('Tabulation%d_length', tables); else name = sprintf('%s_length', hash)
+
+# Set output image position
+set term png enhanced
+set output sprintf('../doc/Graphs/Length/%s.png', name)
+
+# Setup labels and legend
+set xlabel "Length of keys (Bytes)"
+set ylabel "Time per hash (ns)"
+set key box opaque
+set border back
+
+# Calculating stats from file
+#stats sprintf('Results/Length/%s.txt', name) every ::1 using 2 nooutput
+#amount  = int(STATS_records)
+#mean    = int(STATS_mean)
+#max     = int(STATS_max)
+#std_dev = real(STATS_stddev)
+
+stats sprintf('Results/Length/%s.txt', name) every ::1 using 1 nooutput
+xmax     = int(STATS_max)
+
+
+# Making plot
+set xrange [0:xmax]
+set yrange [0:50]
+plot sprintf('Results/Length/%s.txt', name) title name with errorbars,\
+	'' using 1:2 w linespoints ls 1 notitle

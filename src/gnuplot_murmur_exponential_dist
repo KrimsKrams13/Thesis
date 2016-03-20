@@ -1,4 +1,0 @@
-set style data linespoints
-plot 'Results/Murmur_exponential_dist.txt', 3906.2
-
-
