@@ -274,8 +274,12 @@ void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::
     }
   }  
   std::cout << 4 << std::endl;
-  std::uint64_t time_means[max_key_len] = {0};
-  double time_vars[max_key_len] = {0};
+  std::uint64_t time_means[used_length_amounts];
+  double time_vars[used_length_amounts];
+  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+    time_means[k] = 0;
+    time_vars[k] = 0;
+  }
   // Sum
   for (std::uint32_t i = 0; i < its; i++) {
     for (std::uint8_t k = 0; k < max_key_len; k++) {
@@ -317,14 +321,15 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
   std::uint32_t its     = 10000;
   std::uint32_t repeats =  1000;
   std::uint8_t  stride  = 4;
+  std::uint8_t  used_length_amounts = max_key_len/stride;
 
   std::cout << 1 << std::endl;
 
   std::uint32_t** times = new std::uint32_t*[its];
   for (std::uint32_t i = 0; i < its; i++)
   {
-    times[i] = new std::uint32_t[max_key_len/stride];
-    for (std::uint8_t k = 0; k < max_key_len/stride; k++)
+    times[i] = new std::uint32_t[used_length_amounts];
+    for (std::uint8_t k = 0; k < used_length_amounts; k++)
       times[i][k] = 0;
   }
 
@@ -336,7 +341,7 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
     std::cout << "Iteration " << (int)(i2+1) << " of " << (int)its << std::endl;
     // Pre-generating the strings, to only read time of actual hashing
 
-    for (std::uint8_t k = 0; k < max_key_len/stride; k++) {  
+    for (std::uint8_t k = 0; k < used_length_amounts; k++) {  
       keys = generate_random_strings_length((k*stride)+1, amount);
 
       // Warmup 
@@ -354,27 +359,31 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
     }
   }  
   std::cout << 4 << std::endl;
-  std::uint64_t time_means[max_key_len/stride] = {0};
-  double time_vars[max_key_len/stride] = {0};
+  std::uint64_t time_means[used_length_amounts];
+  double time_vars[used_length_amounts];
+  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+    time_means[k] = 0;
+    time_vars[k] = 0;
+  }
   // Sum
   for (std::uint32_t i = 0; i < its; i++) {
-    for (std::uint8_t k = 0; k < max_key_len/stride; k++) {
+    for (std::uint8_t k = 0; k < used_length_amounts; k++) {
       time_means[k] += times[i][k];
     }
   }
   // Mean
-  for (std::uint8_t k = 0; k < max_key_len/stride; k++) {
+  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
     time_means[k] = time_means[k]/its;
   }
 
   // Variance
   for (std::uint32_t i = 0; i < its; i++) {
-    for (std::uint8_t k = 0; k < max_key_len/stride; k++) {
+    for (std::uint8_t k = 0; k < used_length_amounts; k++) {
       time_vars[k] += (times[i][k] - time_means[k]) * (times[i][k] - time_means[k]);
     }
   }
 
-  for (std::uint8_t k = 0; k < max_key_len/stride; k++) {
+  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
     *data_file << std::to_string((k*stride)+1) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
   }
   delete[] keys;
@@ -492,7 +501,10 @@ int main(int argc, char *argv[]) {
   /****************************************/
   std::ofstream data_file;
   const uint16_t interval_amount = 256;
-        uint32_t intervals[interval_amount] = {0};
+        uint32_t intervals[interval_amount];
+  for (std::uint8_t i = 0; i < interval_amount; i++)
+    intervals[i] = 0;
+
   std::map<value_t, std::uint32_t> hist;
 
   std::uint32_t dist_amount = 5000000 ;
