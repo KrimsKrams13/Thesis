@@ -224,7 +224,7 @@ std::map<value_t, std::uint32_t> test_exponential(multicore_hash::abstract_hash<
  * Returns the total amount of nanoseconds spent.
  */
 template<typename value_t>
-void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::uint32_t amount, const std::uint8_t max_key_len, std::ofstream *data_file) {
+void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::uint32_t amount, const std::uint8_t max_key_len, std::ofstream *out_file) {
   using namespace std::chrono;
   // Warmup
   auto start = high_resolution_clock::now();
@@ -299,7 +299,7 @@ void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::
   }
 
   for (std::uint8_t k = 0; k < max_key_len; k++) {
-    *data_file << std::to_string(k) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
+    *out_file << std::to_string(k) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
   }
   for (std::uint8_t k = 0; k < max_key_len; k++)
     delete[] keys[k];
@@ -311,7 +311,7 @@ void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::
  * Returns the total amount of nanoseconds spent.
  */
 template<typename value_t, std::uint32_t num_tables>
-void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint32_t amount, const std::uint8_t max_key_len, std::ofstream *data_file) {
+void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint32_t amount, const std::uint8_t max_key_len, std::ofstream *out_file) {
   using namespace std::chrono;
   // Warmup
   auto start = high_resolution_clock::now();
@@ -384,7 +384,7 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
   }
 
   for (std::uint8_t k = 0; k < used_length_amounts; k++) {
-    *data_file << std::to_string((k*stride)+1) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
+    *out_file << std::to_string((k*stride)+1) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
   }
   delete[] keys;
 }
@@ -398,11 +398,11 @@ void test_core_performance_tab(multicore_hash::tabulation_hash<value_t, num_tabl
 }
 
 template<typename value_t, std::uint32_t num_tables>
-void test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
+uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
   using namespace std::chrono;
   // Warmup
   auto start = high_resolution_clock::now();
- generate_random_strings_uniform(1, 1000);
+  generate_random_strings_uniform(1, 1000);
   auto end = high_resolution_clock::now();
 
   auto tab_hash = new multicore_hash::tabulation_hash<value_t, num_tables>();           
@@ -434,6 +434,7 @@ void test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tab
   std::cout << "Total Time:      " << total_time << "ms / " << (uint64_t)(amount*num_threads*iterations*1000)/total_time << " TP."<<  std::endl;
 
   delete[] keys;
+  return (uint64_t)(amount*iterations*1000)/total_time;
 }
 
 int main(int argc, char *argv[]) {
@@ -499,17 +500,23 @@ int main(int argc, char *argv[]) {
   /****************************************/
   /*********** General testing ************/
   /****************************************/
-  std::ofstream data_file;
+  std::ofstream out_file;
+  std::ifstream in_file;
+  char * in_buffer;
+  std::string in_str;
+  std::uint32_t in_size;
+  std::uint64_t thread_tp;
+
   const uint16_t interval_amount = 256;
         uint32_t intervals[interval_amount];
-  for (std::uint8_t i = 0; i < interval_amount; i++)
+  for (std::uint16_t i = 0; i < interval_amount; i++)
     intervals[i] = 0;
 
   std::map<value_t, std::uint32_t> hist;
 
   std::uint32_t dist_amount = 5000000 ;
   std::uint32_t len_amount  = 5;
-  std::uint8_t  num_threads = 7;
+  std::uint8_t  num_threads = (NUM_THREADS_DEF == -1 ? 7 : NUM_THREADS_DEF);
 
   switch ((int)(argv[2][0]-'0')) {
   case 0:   test_type = "_uniform_dist";
@@ -522,25 +529,37 @@ int main(int argc, char *argv[]) {
             hist = test_exponential(hash, dist_amount, key_bytes);
             break;
   case 3:   test_type = "_length";
-            data_file.open ("Results/Length/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
+            out_file.open ("Results/Length/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
             if (hash_type == "Tabulation")
-              test_length_performance_tab<value_t, num_tables>(tab_hash, len_amount, key_len_bytes, &data_file);
+              test_length_performance_tab<value_t, num_tables>(tab_hash, len_amount, key_len_bytes, &out_file);
             else
-              test_length_performance<value_t>(hash, len_amount, key_len_bytes, &data_file);
-            data_file.flush();
-            data_file.close();
+              test_length_performance<value_t>(hash, len_amount, key_len_bytes, &out_file);
+            out_file.flush();
+            out_file.close();
             break;
   case 4:   test_type = "_cores";
-            // data_file.open ("Results/Cores/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
-            // if (hash_type == "Tabulation")
-            for (uint8_t nt = 1; nt <= num_threads; nt++) {
-              std::cout << "Using " << (int)nt << " threads:" << std::endl;
-              test_cores_performance_tab<value_t, num_tables>(tab_hash, nt, key_len_bytes, len_amount);
+            if (num_threads != 1)
+            {
+              in_file.open ("Results/Cores/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
+
+              // get size of file
+              in_file.seekg(0,std::ifstream::end);
+              in_size=in_file.tellg();
+              in_file.seekg(0);
+ 
+              // allocate memory for file content
+              in_buffer = new char [in_size];
+ 
+              // read content of in_file
+              in_file.read (in_buffer,in_size);
+              in_str = std::string(in_buffer, in_size);
+              in_file.close();
             }
-            // else
-              // test_length_performance<value_t>(hash, len_amount, key_len_bytes, &data_file);
-            // data_file.flush();
-            // data_file.close();
+            thread_tp = test_cores_performance_tab<value_t, num_tables>(tab_hash, num_threads, key_len_bytes, len_amount);
+            out_file.open ("Results/Cores/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
+            out_file << (num_threads == 1 ? "" : in_str) << (int)num_threads << "\t" << thread_tp << std::endl;
+            out_file.flush();
+            out_file.close();
             break;
   default:  std::cout << "Unknown Test Type" << std::endl;
             return 0;
@@ -552,9 +571,9 @@ int main(int argc, char *argv[]) {
       intervals[p.first/(std::numeric_limits<value_t>::max()/interval_amount)] += p.second;
     
     std::string path = "Results/Distribution/" + hash_type + test_type + ".txt";
-    data_file.open (path);
-    data_file.clear();
-    if (!data_file.is_open())
+    out_file.open (path);
+    out_file.clear();
+    if (!out_file.is_open())
       std::cout << "Data file isn't open." << std::endl;
 
     // Printing histogram results
@@ -563,13 +582,13 @@ int main(int argc, char *argv[]) {
     std::map<std::uint8_t, std::uint32_t> bin_hist;
     for (std::uint16_t i = 0; i < interval_amount; i++)
     {
-      data_file << i << "\t" << intervals[i] << "\n";
+      out_file << i << "\t" << intervals[i] << "\n";
       bin_hist[i] = intervals[i];
     }
-    data_file.flush();
-    if (data_file.fail())
+    out_file.flush();
+    if (out_file.fail())
       std::cout << "Something failed" << std::endl;
-    data_file.close();
+    out_file.close();
     print_spread_statistics<std::uint8_t>(bin_hist);
   }
 
