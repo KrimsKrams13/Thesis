@@ -274,9 +274,9 @@ void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::
     }
   }  
   std::cout << 4 << std::endl;
-  std::uint64_t time_means[used_length_amounts];
-  double time_vars[used_length_amounts];
-  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+  std::uint64_t time_means[max_key_len];
+  double time_vars[max_key_len];
+  for (std::uint8_t k = 0; k < max_key_len; k++) {
     time_means[k] = 0;
     time_vars[k] = 0;
   }
