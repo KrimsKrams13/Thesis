@@ -12,15 +12,14 @@
 #include "abstract_hash.h"
 
 #define CACHE_LINE_SIZE 64
-#define CACHE_ALIGN __attribute__((__aligned__(CACHE_LINE_SIZE)))
 
 namespace multicore_hash {
   template<typename value_t = std::uint32_t, std::uint8_t _num_tables = 1>
   class tabulation_hash : public abstract_hash<value_t> {
   private:
-    struct tabulation_value {
+    struct alignas(CACHE_LINE_SIZE) tabulation_value {
       value_t value;
-    } CACHE_ALIGN;
+    };
 
     // Chunksize fixed to 8 bits 
     tabulation_value tabulation_tables[_num_tables][std::numeric_limits<std::uint8_t>::max()];

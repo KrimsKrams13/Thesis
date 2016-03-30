@@ -10,9 +10,22 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
-#include <thread>
-
 #include <map>
+#include <thread>
+#include <pthread.h>
+
+int stick_thread_to_core(pthread_t thread, int core_id) {
+   int num_cores = 32;
+   if (core_id < 0 || core_id >= num_cores)
+      return EINVAL;
+
+   cpu_set_t cpuset;
+   CPU_ZERO(&cpuset);
+   CPU_SET(core_id, &cpuset);
+
+   return pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+}
+
 
 std::string generate_random_string_uniform(std::uint8_t byte_len, std::uint8_t min_val = 0, std::uint64_t max_val = ULLONG_MAX)
 {
@@ -394,15 +407,15 @@ void test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tab
     hash->get_hash(keys[j]);
 
   std::thread threads[num_threads];
-  std::uint32_t iterations = 10000000;
-
+  std::uint32_t iterations = 1000000;
   std::uint64_t total_time = 0;
 
-  // std::cout << "Iteration " << i << " of " << iterations << std::endl;
   start = high_resolution_clock::now();
   // Calculating the hashing
-  for(std::uint32_t t = 0; t < num_threads; t++)
+  for(std::uint32_t t = 0; t < num_threads; t++) {
     threads[t] = std::thread(test_core_performance_tab<value_t, num_tables>, tab_hash, &keys[t*amount], amount, iterations);
+    stick_thread_to_core(threads[t].native_handle(), t+1);
+  }
   for(std::uint32_t t = 0; t < num_threads; t++)
     threads[t].join();
   end = high_resolution_clock::now();
@@ -484,7 +497,7 @@ int main(int argc, char *argv[]) {
 
   std::uint32_t dist_amount = 5000000 ;
   std::uint32_t len_amount  = 5;
-  std::uint8_t  num_threads = 8;
+  std::uint8_t  num_threads = 7;
 
   switch ((int)(argv[2][0]-'0')) {
   case 0:   test_type = "_uniform_dist";
