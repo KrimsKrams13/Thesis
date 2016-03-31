@@ -394,17 +394,9 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
 }
 
 void test_core_performance_tab(std::string *keys, std::uint32_t amount, std::uint32_t iterations) {
-  using namespace std::chrono;
-  // Calculating the hashing
-  for(std::uint32_t j = 0; j < amount; j++) 
-  {
-    auto start = high_resolution_clock::now();
-    for (std::uint32_t i = 0; i < iterations; i++)
+  for (std::uint32_t i = 0; i < iterations; i++)
+    for(std::uint32_t j = 0; j < amount; j++) 
       tab_hash->get_hash(keys[j]);
-
-    auto end = high_resolution_clock::now();
-    std::cout << duration_cast<milliseconds>(end-start).count() << std::endl;
-  }
 }
 
 uint64_t test_cores_performance_tab(std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
