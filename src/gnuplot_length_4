@@ -25,6 +25,7 @@ set border back
 
 # Making plot
 set xrange [0:64]
+set yrange [0:50]
 plot 'Results/Length/Tabulation1_length.txt' title 'Numtables=1' with errorbars lt rgb "red", \
 	 '' notitle with lines lt rgb "red", \
 	 'Results/Length/Tabulation8_length.txt' title 'Numtables=8' with errorbars lt rgb "green", \

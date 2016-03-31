@@ -313,15 +313,11 @@ void test_length_performance(multicore_hash::abstract_hash<value_t> *hash, std::
 template<typename value_t, std::uint32_t num_tables>
 void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint32_t amount, const std::uint8_t max_key_len, std::ofstream *out_file) {
   using namespace std::chrono;
-  // Warmup
-  auto start = high_resolution_clock::now();
- generate_random_strings_uniform(1, 1000);
-  auto end = high_resolution_clock::now();
 
   std::uint32_t its     = 10000;
-  std::uint32_t repeats =  1000;
-  std::uint8_t  stride  = 4;
-  std::uint8_t  used_length_amounts = max_key_len/stride;
+  std::uint32_t repeats = 10000;
+  const std::uint8_t  stride  = 4;
+  const std::uint8_t  used_length_amounts = 64/stride;
 
   std::cout << 1 << std::endl;
 
@@ -334,6 +330,8 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
   }
 
   std::cout << 2 << std::endl;
+  auto start = high_resolution_clock::now();
+  auto end = high_resolution_clock::now();
 
   // Testing
   std::string *keys = new std::string[amount];
@@ -342,50 +340,47 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
     // Pre-generating the strings, to only read time of actual hashing
 
     for (std::uint8_t k = 0; k < used_length_amounts; k++) {  
-      keys = generate_random_strings_length((k*stride)+1, amount);
+      keys = generate_random_strings_length((k+1)*stride, amount);
 
       // Warmup 
+      start = high_resolution_clock::now();
       for(std::uint32_t j = 0; j < amount; j++)
         hash->get_hash(keys[j]);
 
-      auto start = high_resolution_clock::now();
+      start = high_resolution_clock::now();
       // Calculating the hashing
       for (std::uint32_t i = 0; i < repeats; i++) {    
         for(std::uint32_t j = 0; j < amount; j++)
           hash->get_hash(keys[j]);
       }
-      auto end = high_resolution_clock::now();
+      end = high_resolution_clock::now();
       times[i2][k] = duration_cast<nanoseconds>((end-start)/(amount*repeats)).count();
     }
   }  
   std::cout << 4 << std::endl;
-  std::uint64_t time_means[used_length_amounts];
-  double time_vars[used_length_amounts];
-  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
-    time_means[k] = 0;
-    time_vars[k] = 0;
-  }
+  std::uint64_t time_means[used_length_amounts] = {0};
+  std::uint64_t time_vars[used_length_amounts] = {0};
+  // for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+  //   time_means[k] = 0;
+  //   time_vars[k] = 0;
+  // }
   // Sum
-  for (std::uint32_t i = 0; i < its; i++) {
-    for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+  for (std::uint32_t i = 0; i < its; i++)
+    for (std::uint8_t k = 0; k < used_length_amounts; k++)
       time_means[k] += times[i][k];
-    }
-  }
+
   // Mean
-  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+  for (std::uint8_t k = 0; k < used_length_amounts; k++)
     time_means[k] = time_means[k]/its;
-  }
 
   // Variance
-  for (std::uint32_t i = 0; i < its; i++) {
-    for (std::uint8_t k = 0; k < used_length_amounts; k++) {
+  for (std::uint32_t i = 0; i < its; i++)
+    for (std::uint8_t k = 0; k < used_length_amounts; k++)
       time_vars[k] += (times[i][k] - time_means[k]) * (times[i][k] - time_means[k]);
-    }
-  }
 
-  for (std::uint8_t k = 0; k < used_length_amounts; k++) {
-    *out_file << std::to_string((k*stride)+1) + "\t" + std::to_string(time_means[k]) + "\t" + std::to_string(sqrt(time_vars[k]/its)) + "\n";
-  }
+  for (std::uint8_t k = 0; k < used_length_amounts; k++)
+    *out_file << std::to_string((k*stride)+1) << "\t" << std::to_string(time_means[k]) << "\t" << std::to_string(sqrt((double)time_vars[k]/its)) << "\n";
+
   delete[] keys;
 }
 
@@ -400,11 +395,6 @@ void test_core_performance_tab(multicore_hash::tabulation_hash<value_t, num_tabl
 template<typename value_t, std::uint32_t num_tables>
 uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
   using namespace std::chrono;
-  // Warmup
-  auto start = high_resolution_clock::now();
-  generate_random_strings_uniform(1, 1000);
-  auto end = high_resolution_clock::now();
-
   auto tab_hash = new multicore_hash::tabulation_hash<value_t, num_tables>();           
 
   // Testing
@@ -412,19 +402,21 @@ uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num
   keys = generate_random_strings_length(byte_len, amount*num_threads);
 
   // Warmup 
+  auto start = high_resolution_clock::now();
   for(std::uint32_t j = 0; j < amount; j++)
     hash->get_hash(keys[j]);
+  auto end = high_resolution_clock::now();
 
   std::thread threads[num_threads];
   std::uint32_t iterations = 1000000;
   std::uint64_t total_time = 0;
 
-  start = high_resolution_clock::now();
   // Calculating the hashing
   for(std::uint32_t t = 0; t < num_threads; t++) {
     threads[t] = std::thread(test_core_performance_tab<value_t, num_tables>, tab_hash, &keys[t*amount], amount, iterations);
     stick_thread_to_core(threads[t].native_handle(), t+1);
   }
+  start = high_resolution_clock::now();
   for(std::uint32_t t = 0; t < num_threads; t++)
     threads[t].join();
   end = high_resolution_clock::now();
@@ -469,8 +461,8 @@ int main(int argc, char *argv[]) {
   typedef std::uint32_t value_t;
            
   const std::uint8_t num_tables    = (NUM_TABLES_DEF == -1 ? 8 : NUM_TABLES_DEF);
-        std::uint8_t key_bytes     = 8;                                     
-        std::uint8_t key_len_bytes = 64;                                     
+  const std::uint8_t key_bytes     = 8;                                     
+  const std::uint8_t key_len_bytes = 64;                                     
         std::string test_type;
         std::string hash_type;
 
@@ -508,9 +500,10 @@ int main(int argc, char *argv[]) {
   std::uint64_t thread_tp;
 
   const uint16_t interval_amount = 256;
-        uint32_t intervals[interval_amount];
-  for (std::uint16_t i = 0; i < interval_amount; i++)
-    intervals[i] = 0;
+   uint32_t intervals[interval_amount] = {0};
+  //       uint32_t intervals[interval_amount];
+  // for (std::uint16_t i = 0; i < interval_amount; i++)
+  //   intervals[i] = 0;
 
   std::map<value_t, std::uint32_t> hist;
 
