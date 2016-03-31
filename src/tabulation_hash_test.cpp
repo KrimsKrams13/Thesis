@@ -436,8 +436,8 @@ uint64_t test_cores_performance_tab(std::uint8_t num_threads, std::uint8_t byte_
   end = high_resolution_clock::now();
   total_time = duration_cast<milliseconds>(end-start).count();
   
-  std::cout << "Time per thread: " << total_time/num_threads << "ms / " << (uint64_t)(amount*iterations*1000)/total_time << " TP." <<  std::endl;
-  std::cout << "Total Time:      " << total_time << "ms / " << (uint64_t)(amount*num_threads*iterations*1000)/total_time << " TP."<<  std::endl;
+  std::cout << "Time per thread: " << total_time/num_threads << "ms / " << (((uint64_t)amount*iterations)*1000)/total_time << " TP." <<  std::endl;
+  std::cout << "Total Time:      " << total_time << "ms / " << (((uint64_t)amount*iterations)*num_threads*1000)/total_time << " TP."<<  std::endl;
 
   delete[] keys;
   return (uint64_t)(amount*iterations*1000)/total_time;
