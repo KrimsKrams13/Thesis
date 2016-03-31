@@ -14,6 +14,15 @@
 #include <thread>
 #include <pthread.h>
 
+
+typedef std::uint32_t value_t;
+           
+const std::uint8_t num_tables    = (NUM_TABLES_DEF == -1 ? 8 : NUM_TABLES_DEF);
+const std::uint8_t key_bytes     = 8;                                     
+const std::uint8_t key_len_bytes = 64;    
+
+multicore_hash::tabulation_hash<uint32_t, num_tables> *tab_hash = new multicore_hash::tabulation_hash<uint32_t, num_tables>();
+
 int stick_thread_to_core(pthread_t thread, int core_id) {
    int num_cores = 32;
    if (core_id < 0 || core_id >= num_cores)
@@ -384,18 +393,22 @@ void test_length_performance_tab(multicore_hash::tabulation_hash<value_t, num_ta
   delete[] keys;
 }
 
-template<typename value_t, std::uint32_t num_tables>
-void test_core_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::string *keys, std::uint32_t amount, std::uint32_t iterations) {
+void test_core_performance_tab(std::string *keys, std::uint32_t amount, std::uint32_t iterations) {
+  using namespace std::chrono;
   // Calculating the hashing
-  for (std::uint32_t i = 0; i < iterations; i++)
-    for(std::uint32_t j = 0; j < amount; j++)
-      hash->get_hash(keys[j]);
+  for(std::uint32_t j = 0; j < amount; j++) 
+  {
+    auto start = high_resolution_clock::now();
+    for (std::uint32_t i = 0; i < iterations; i++)
+      tab_hash->get_hash(keys[j]);
+
+    auto end = high_resolution_clock::now();
+    std::cout << duration_cast<milliseconds>(end-start).count() << std::endl;
+  }
 }
 
-template<typename value_t, std::uint32_t num_tables>
-uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num_tables> *hash, std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
+uint64_t test_cores_performance_tab(std::uint8_t num_threads, std::uint8_t byte_len, std::uint32_t amount) {
   using namespace std::chrono;
-  auto tab_hash = new multicore_hash::tabulation_hash<value_t, num_tables>();           
 
   // Testing
   std::string *keys = new std::string[amount*num_threads];
@@ -404,21 +417,22 @@ uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num
   // Warmup 
   auto start = high_resolution_clock::now();
   for(std::uint32_t j = 0; j < amount; j++)
-    hash->get_hash(keys[j]);
+    tab_hash->get_hash(keys[j]);
   auto end = high_resolution_clock::now();
 
   std::thread threads[num_threads];
-  std::uint32_t iterations = 1000000;
+  std::uint32_t iterations = 10000000;
   std::uint64_t total_time = 0;
 
   // Calculating the hashing
   for(std::uint32_t t = 0; t < num_threads; t++) {
-    threads[t] = std::thread(test_core_performance_tab<value_t, num_tables>, tab_hash, &keys[t*amount], amount, iterations);
-    stick_thread_to_core(threads[t].native_handle(), t+1);
+    threads[t] = std::thread(test_core_performance_tab, &keys[t*amount], amount, iterations);
+    stick_thread_to_core(threads[t].native_handle(), (t*2)+1);
   }
   start = high_resolution_clock::now();
-  for(std::uint32_t t = 0; t < num_threads; t++)
+  for(std::uint32_t t = 0; t < num_threads; t++) {
     threads[t].join();
+  }
   end = high_resolution_clock::now();
   total_time = duration_cast<milliseconds>(end-start).count();
   
@@ -428,6 +442,8 @@ uint64_t test_cores_performance_tab(multicore_hash::tabulation_hash<value_t, num
   delete[] keys;
   return (uint64_t)(amount*iterations*1000)/total_time;
 }
+
+
 
 int main(int argc, char *argv[]) {
   using namespace std::chrono;
@@ -456,18 +472,12 @@ int main(int argc, char *argv[]) {
   auto start = high_resolution_clock::now();
   generate_random_strings_length(63, 100);
   auto end = high_resolution_clock::now();
-  // start = high_resolution_clock::now();
-
-  typedef std::uint32_t value_t;
-           
-  const std::uint8_t num_tables    = (NUM_TABLES_DEF == -1 ? 8 : NUM_TABLES_DEF);
-  const std::uint8_t key_bytes     = 8;                                     
-  const std::uint8_t key_len_bytes = 64;                                     
-        std::string test_type;
-        std::string hash_type;
+  // start = high_resolution_clock::now();                                 
+  
+  std::string test_type;
+  std::string hash_type;
 
   multicore_hash::abstract_hash<value_t> *hash;
-  multicore_hash::tabulation_hash<value_t, num_tables> *tab_hash;
 
   /************************************************/
   /*********** Mult_Shift_Hash testing ************/
@@ -481,8 +491,6 @@ int main(int argc, char *argv[]) {
             break;
   case 2:   hash_type = "Tabulation"; 
             hash = new multicore_hash::tabulation_hash<value_t, num_tables>();
-            tab_hash = new multicore_hash::tabulation_hash<value_t, num_tables>();           
-            // test_num_tables_performance();//<value_t, num_tables>(hash, 1000000, 64);
             break;
   default:  std::cout << "Unknown Hash Type" << std::endl;
             return 0;
@@ -500,10 +508,7 @@ int main(int argc, char *argv[]) {
   std::uint64_t thread_tp;
 
   const uint16_t interval_amount = 256;
-   uint32_t intervals[interval_amount] = {0};
-  //       uint32_t intervals[interval_amount];
-  // for (std::uint16_t i = 0; i < interval_amount; i++)
-  //   intervals[i] = 0;
+        uint32_t intervals[interval_amount] = {0};
 
   std::map<value_t, std::uint32_t> hist;
 
@@ -548,7 +553,7 @@ int main(int argc, char *argv[]) {
               in_str = std::string(in_buffer, in_size);
               in_file.close();
             }
-            thread_tp = test_cores_performance_tab<value_t, num_tables>(tab_hash, num_threads, key_len_bytes, len_amount);
+            thread_tp = test_cores_performance_tab(num_threads, key_len_bytes, len_amount);
             out_file.open ("Results/Cores/" + hash_type + std::to_string(num_tables) + test_type + ".txt");
             out_file << (num_threads == 1 ? "" : in_str) << (int)num_threads << "\t" << thread_tp << std::endl;
             out_file.flush();

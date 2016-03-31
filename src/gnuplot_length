@@ -17,10 +17,10 @@ set key box opaque
 set border back
 
 # Calculating stats from file
-#stats sprintf('Results/Length/%s.txt', name) every ::1 using 2 nooutput
+stats sprintf('Results/Length/%s.txt', name) every ::1 using 2 nooutput
 #amount  = int(STATS_records)
 #mean    = int(STATS_mean)
-#max     = int(STATS_max)
+ymax     = int(STATS_max)
 #std_dev = real(STATS_stddev)
 
 stats sprintf('Results/Length/%s.txt', name) every ::1 using 1 nooutput
@@ -29,6 +29,6 @@ xmax     = int(STATS_max)
 
 # Making plot
 set xrange [0:xmax]
-set yrange [0:50]
+set yrange [0:ymax*1.5]
 plot sprintf('Results/Length/%s.txt', name) title name with errorbars,\
 	'' using 1:2 w linespoints ls 1 notitle

@@ -17,15 +17,15 @@ set key left top box opaque
 set border back
 
 # Calculating stats from file
-#stats sprintf('Results/%s.txt', name) every ::1 using 2 nooutput
+stats sprintf('Results/Length/%s.txt', name) every ::1 using 2 nooutput
 #amount  = int(STATS_records)
 #mean    = int(STATS_mean)
-#max     = int(STATS_max)
+ymax     = int(STATS_max)
 #std_dev = real(STATS_stddev)
 
 # Making plot
 set xrange [0:64]
-set yrange [0:50]
+set yrange [0:ymax*1.5]
 plot 'Results/Length/Tabulation1_length.txt' title 'Numtables=1' with errorbars lt rgb "red", \
 	 '' notitle with lines lt rgb "red", \
 	 'Results/Length/Tabulation8_length.txt' title 'Numtables=8' with errorbars lt rgb "green", \

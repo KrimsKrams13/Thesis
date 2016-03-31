@@ -1,7 +1,7 @@
 reset
 
 # Specify hash type and test type
-name = "throughput_per_thread"
+name = "Tabulation8_cores"
 
 # Set output image position
 set term png enhanced
@@ -14,18 +14,18 @@ set key box opaque
 set border back
 
 # Calculating stats from file
-stats sprintf('Results/%s.txt', name) every ::1 using 2 nooutput
+stats sprintf('Results/Cores/%s.txt', name) every ::1 using 2 nooutput
 amount  = int(STATS_records)
 max     = int(STATS_max)
 
-stats sprintf('Results/%s.txt', name) every ::::0 using 2 nooutput
+stats sprintf('Results/Cores/%s.txt', name) every ::::0 using 2 nooutput
 first   = int(STATS_min)
 
 f(x) = first*x
 
 # Making plot
 set xrange [0:amount+1]
-set yrange [0:max*amount]
-plot sprintf('Results/%s.txt', name) title "Throughput Per Thread" w linespoints,\
+set yrange [0:max*(amount+1)*1.25]
+plot sprintf('Results/Cores/%s.txt', name) title "Throughput Per Thread" w linespoints,\
 	'' using 1:($1*$2) title "Total Throughput" w linespoints,\
 	f(x) title "Optimal Total Throughput"
