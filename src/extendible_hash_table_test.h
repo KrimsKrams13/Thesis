@@ -13,7 +13,7 @@
 #include <thread>
 #include <pthread.h>
 
-#define value_t std::uint32_t
+#define hash_value_t std::uint32_t
 typedef boost::shared_mutex shared_mutex;
 
 namespace multicore_hash {
@@ -21,11 +21,12 @@ namespace multicore_hash {
 	   	cpu_set_t cpuset;
    		CPU_ZERO(&cpuset);
    		CPU_SET(core_id, &cpuset);
-
+		
 		return pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
 	}
+	constexpr std::uint8_t initial_global_depht = 2;
 
-	void insert_concurrent(extendible_hash_table<std::string, std::string> *hash_table, std::string *keys, std::uint32_t amount) {
+	void insert_concurrent(extendible_hash_table<std::string, std::string, initial_global_depht> *hash_table, std::string *keys, std::uint32_t amount) {
 		// Calculating the hashing
 		for(std::uint32_t j = 0; j < amount; j++) {
 			hash_table->insert(keys[j], keys[j]);
@@ -74,15 +75,15 @@ namespace multicore_hash {
 	class extendible_hash_table_test : public CppUnit::TestFixture {
 	private:
 		abstract_hash<std::uint32_t> *hash;
-		extendible_hash_table<std::string, std::string> *hash_table;
+		extendible_hash_table<std::string, std::string, initial_global_depht> *hash_table;
 		abstract_push_op *concat_push;
 
 	public:
 		extendible_hash_table_test(){}
 
 		void setUp() {
-			hash = new mod_hash<value_t, (1<<31)>();
-			hash_table = new extendible_hash_table<std::string, std::string>(hash);
+			hash = new mod_hash<hash_value_t, (1<<31)>();
+			hash_table = new extendible_hash_table<std::string, std::string, initial_global_depht>(hash);
 			concat_push = new concat_push_op();
 		}
 
@@ -93,12 +94,14 @@ namespace multicore_hash {
 		}
 
 		void test_insert() {
+			std::cout << "TEST_INSERT" << std::endl;
 			CPPUNIT_ASSERT(is_table_empty());
 			hash_table->insert(" 0", " 1");
 			CPPUNIT_ASSERT(!is_table_empty());
 		}
 
 		void test_delete() {
+			std::cout << "TEST_DELETE" << std::endl;
 			CPPUNIT_ASSERT(is_table_empty());
 			hash_table->insert(" 0", " 1");
 			CPPUNIT_ASSERT(!is_table_empty());
@@ -112,10 +115,10 @@ namespace multicore_hash {
 		}
 
 		void test_insert_delete_many() {
+			std::cout << "TEST_INSERT_DELETE_MANY" << std::endl;
 			CPPUNIT_ASSERT(hash_table->get_global_depth() == 2);
 			std::uint64_t i = 0;
 			std::uint8_t  p = 10;
-			std::cout << (1<<p) <<std::endl;
 			for (std::uint8_t j = 1; j <= p; j++) {
 	  			for (; i < (1<<j)*hash_table->get_bucket_entries(); i++)
 	  			{
@@ -132,6 +135,7 @@ namespace multicore_hash {
 		}
 
 		void test_update() {
+			std::cout << "TEST_UPDATE" << std::endl;
 			CPPUNIT_ASSERT(hash_table->size() == 0);
 			hash_table->insert("1", "1");
 			CPPUNIT_ASSERT(hash_table->size() == 1);
@@ -147,6 +151,7 @@ namespace multicore_hash {
 		}
 
 		void test_scan() {
+			std::cout << "TEST_SCAN" << std::endl;
 			hash_table->insert("1", "one");
 			hash_table->insert("2", "two");
 			hash_table->insert("3", "three");
@@ -158,6 +163,7 @@ namespace multicore_hash {
 			CPPUNIT_ASSERT(((concat_push_op *)concat_push)->get() == ", two, three, four");
 		}
 		void test_scan_reverse() {
+			std::cout << "TEST_SCAN_REVERSE" << std::endl;
 			hash_table->insert("1", "one");
 			hash_table->insert("2", "two");
 			hash_table->insert("3", "three");
@@ -170,6 +176,7 @@ namespace multicore_hash {
 		}
 
 		void test_split() {
+			std::cout << "TEST_SPLIT" << std::endl;
 			// No split from start
 			CPPUNIT_ASSERT(hash_table->get_global_depth() == 2);
 
@@ -201,12 +208,22 @@ namespace multicore_hash {
 			CPPUNIT_ASSERT(hash_table->get_global_depth() == 4);
 		}
 
+		void test_double_split() {
+			std::cout << "TEST_DOUBLE_SPLIT" << std::endl;
+			CPPUNIT_ASSERT(hash_table->get_global_depth() == 2);
+
+			// Filling one bucket doesn't split
+			for (std::uint32_t i = 0; i <= hash_table->get_bucket_entries(); i++)
+				hash_table->insert(std::to_string(i*hash_table->directory_size()<<1), " 1");
+			CPPUNIT_ASSERT(hash_table->get_global_depth() == 4);			
+		}
+
 		void test_concurrent_different() {
+			std::cout << "TEST_CONCURRENT_DIFFERENT" << std::endl;
 			std::uint8_t  num_threads = 4;
 			std::uint32_t amount      = 40000;
 			std::thread   threads[num_threads];
 			std::string   *keys = new std::string[amount*num_threads];
-			std::cout << (int)hash_table->get_global_depth() << ' ' << std::endl;
 
 			for(std::uint32_t j = 0; j < num_threads; j++) {
 				for(std::uint32_t i = 0; i < amount; i++) {
@@ -221,12 +238,12 @@ namespace multicore_hash {
 			for(std::uint32_t t = 0; t < num_threads; t++) {
 				threads[t].join();
 			}
-			std::cout << (int)hash_table->get_global_depth() << ' ' << std::endl;
 			CPPUNIT_ASSERT(hash_table->size() == num_threads*amount);
-			std::cout << (int)hash_table->get_global_depth() << ' ' << std::endl;
+			delete[] keys;
 		}
 
 		void test_concurrent_all() {
+			std::cout << "TEST_CONCURRENT_ALL" << std::endl;
 			std::uint8_t  num_threads = 4;
 			std::uint32_t amount      = 1<<16;
 			std::thread   threads[num_threads];
@@ -243,9 +260,8 @@ namespace multicore_hash {
 			for(std::uint32_t t = 0; t < num_threads; t++) {
 				threads[t].join();
 			}
-			std::cout << (int)hash_table->get_global_depth() << ' ';
-			// hash_table->print_extendible_hash_table(true);
-			// CPPUNIT_ASSERT(hash_table->size() == num_threads*amount);
+			CPPUNIT_ASSERT(hash_table->size() == num_threads*amount);
+			delete[] keys;
 		}
 
 		void test_spec() {
@@ -265,16 +281,7 @@ namespace multicore_hash {
 			for (auto s : spec) {
 				hash_table->insert(std::to_string(s), std::to_string(s));
 			}
-			hash_table->print_extendible_hash_table(false);
-		}
-
-		void test_double_split() {
-			CPPUNIT_ASSERT(hash_table->get_global_depth() == 2);
-
-			// Filling one bucket doesn't split
-			for (std::uint32_t i = 0; i <= hash_table->get_bucket_entries(); i++)
-				hash_table->insert(std::to_string(i*hash_table->directory_size()<<1), " 1");
-			CPPUNIT_ASSERT(hash_table->get_global_depth() == 4);			
+			// hash_table->print_extendible_hash_table(false);
 		}
 
 		bool is_table_empty() {
@@ -284,29 +291,29 @@ namespace multicore_hash {
 		static CppUnit::Test *suite()
 		{
 			CppUnit::TestSuite *suite_of_tests = new CppUnit::TestSuite( "extendible_hash_table_suite" );
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //          	           "test_insert",
-   //          	           	&extendible_hash_table_test::test_insert ) );
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //              	       "test_delete",
-   //                  	   &extendible_hash_table_test::test_delete ) );
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //              	       "test_update",
-   //                  	   &extendible_hash_table_test::test_update ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+            	           "test_insert",
+            	           	&extendible_hash_table_test::test_insert ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                	       "test_delete",
+                    	   &extendible_hash_table_test::test_delete ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                	       "test_update",
+                    	   &extendible_hash_table_test::test_update ) );
 
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //              	       "test_scan",
-   //                  	   &extendible_hash_table_test::test_scan ) );
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //              	       "test_scan_reverse",
-   //                  	   &extendible_hash_table_test::test_scan_reverse ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                	       "test_scan",
+                    	   &extendible_hash_table_test::test_scan ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                	       "test_scan_reverse",
+                    	   &extendible_hash_table_test::test_scan_reverse ) );
 
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //                     		"test_split",
-   //                     		&extendible_hash_table_test::test_split ) );
-			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-   //                     		"test_double_split",
-   //                     		&extendible_hash_table_test::test_double_split ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                       		"test_split",
+                       		&extendible_hash_table_test::test_split ) );
+			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+                       		"test_double_split",
+                       		&extendible_hash_table_test::test_double_split ) );
 
 			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
    //                     		"test_insert_delete_many",
@@ -315,9 +322,11 @@ namespace multicore_hash {
 			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
    //                     		"test_concurrent_different",
    //                     		&extendible_hash_table_test::test_concurrent_different ) );
-			suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
-                       		"test_concurrent_all",
-                       		&extendible_hash_table_test::test_concurrent_all ) );
+			// // for (std::uint32_t i = 0; i < 200; i++) {
+			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
+   //                     		"test_concurrent_all",
+   //                     		&extendible_hash_table_test::test_concurrent_all ) );
+		// }
 			// suite_of_tests->addTest( new CppUnit::TestCaller<extendible_hash_table_test>(
    //                     		"test_spec",
    //                     		&extendible_hash_table_test::test_spec ) );
