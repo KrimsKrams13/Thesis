@@ -2,14 +2,14 @@ NUM_TABLES     = -1
 NUM_THREADS    = -1
 
 CC             = g++
-CFLAGS         = -c -std=c++14 -O3 -D NUM_TABLES_DEF=$(NUM_TABLES) -D NUM_THREADS_DEF=$(NUM_THREADS)
+CFLAGS         = -c -std=c++11 -O3 -D NUM_TABLES_DEF=$(NUM_TABLES) -D NUM_THREADS_DEF=$(NUM_THREADS)
 LDFLAGS        = -pthread
 
 TAB_SOURCES    = tabulation_hash_test.cpp tabulation_hash.cpp
 TAB_OBJECTS    = $(TAB_SOURCES:.cpp=.o)
 TAB_EXECUTABLE = run_tab
 
-HT_SOURCES     = hash_table_test.cpp
+HT_SOURCES     = hash_table_test.cpp workload.cpp
 HT_OBJECTS     = $(HT_SOURCES:.cpp=.o)
 HT_EXECUTABLE  = run_ht
 

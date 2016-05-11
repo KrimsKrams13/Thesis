@@ -6,36 +6,31 @@
 #include <queue>
 #include <vector>
 #include <boost/thread.hpp>
-#include "abstract_hash_table.h"
 
-#define CACHE_LINE_SIZE 64
-typedef boost::shared_mutex shared_mutex;
-typedef std::string value_t;
+#include "abstract_hash_table.h"
+#include "push_ops.h"
+
 namespace multicore_hash {
 
-	template<typename key_t, typename test, std::uint32_t directory_size>
-	class array_hash_table : public abstract_hash_table<key_t, value_t> {
+	template<std::uint32_t directory_size>
+	class array_hash_table : public abstract_hash_table {
 	private:
 		abstract_hash<hash_value_t> *hash;
 			
 		struct alignas(CACHE_LINE_SIZE) hash_bucket {
 
-			std::vector<key_t> keys;
-			std::vector<value_t> values;
+			std::vector<std::string> keys;
+			std::vector<std::string> values;
 
-			hash_bucket(std::uint32_t _initial_bucket_size) {
-				keys   = std::vector<key_t  >(_initial_bucket_size);
-				values = std::vector<value_t>(_initial_bucket_size);
-			}
-			hash_bucket(key_t key, value_t value) {
-				keys        = std::vector<key_t  >(1, key);
-				values      = std::vector<value_t>(1, value);
+			hash_bucket(std::string key, std::string value) {
+				keys   = std::vector<std::string>(1, key);
+				values = std::vector<std::string>(1, value);
 			}
 
 			~hash_bucket() {
 			}
 
-			void insert_next(key_t new_key, value_t new_value) {
+			void insert_next(std::string new_key, std::string new_value) {
 				keys.push_back(new_key);
 				values.push_back(new_value);
 			}
@@ -49,15 +44,15 @@ namespace multicore_hash {
 		};
 
 		hash_bucket **directory;
-		shared_mutex *bucket_mutexes;
+		boost::shared_mutex *bucket_mutexes;
 
 	public:
-		array_hash_table(abstract_hash<hash_value_t> *_hash, std::uint32_t initial_bucket_size = 2) : hash(_hash) {
+		array_hash_table(abstract_hash<hash_value_t> *_hash) : hash(_hash) {
 			directory = (hash_bucket**) malloc(directory_size*sizeof(hash_bucket*));
 			for (std::uint32_t b = 0; b < directory_size; b++) {
 				directory[b] = NULL;
 			}
-			bucket_mutexes = new shared_mutex[directory_size];
+			bucket_mutexes = new boost::shared_mutex[directory_size];
 		}
 			
 		~array_hash_table() {
@@ -103,11 +98,11 @@ namespace multicore_hash {
 			std::cout << std::string(7*(directory_size+1), '_') << std::endl;
 		}
 
-		bool get(const key_t& key, value_t& value) override {
+		bool get(const std::string& key, std::string& value) override {
 			hash_value_t hash_value = hash->get_hash(key);
 			std::uint32_t bucket_number = hash_value & (directory_size-1);
 
-			boost::shared_lock<shared_mutex> local_shared_lock(bucket_mutexes[bucket_number]);
+			boost::shared_lock<boost::shared_mutex> local_shared_lock(bucket_mutexes[bucket_number]);
 			if (directory[bucket_number]) {
 				for (uint32_t i = 0; i < directory[bucket_number]->keys.size(); i++) {
 					if (directory[bucket_number]->keys[i] == key) {
@@ -121,11 +116,11 @@ namespace multicore_hash {
 			return false;
 		}
 
-		void insert(const key_t& key, const value_t& new_value) override {
+		void insert(const std::string& key, const std::string& new_value) override {
 			hash_value_t hash_value = hash->get_hash(key);
 			std::uint32_t bucket_number = hash_value & (directory_size-1);
 
-			boost::unique_lock<shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
+			boost::unique_lock<boost::shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
 			if (directory[bucket_number]) {
 				directory[bucket_number]->insert_next(key, new_value);
 			} else {
@@ -136,11 +131,11 @@ namespace multicore_hash {
 
 		}
 		// Returns previous value, if found, -1 otherwise
-		void update(const key_t& key, const value_t& new_value) override {
+		void update(const std::string& key, const std::string& new_value) override {
 			hash_value_t hash_value = hash->get_hash(key);
 			std::uint32_t bucket_number = hash_value & (directory_size-1);
 			
-			boost::unique_lock<shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
+			boost::unique_lock<boost::shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
 			if (directory[bucket_number]) {
 				for (uint32_t i = 0; i < directory[bucket_number]->keys.size(); i++) {
 					if (directory[bucket_number]->keys[i] == key) {
@@ -153,10 +148,10 @@ namespace multicore_hash {
 		}
 
 		// Returns deleted value, if found, -1 otherwise
-		void remove(const key_t& key) override {
+		void remove(const std::string& key) override {
 			hash_value_t hash_value = hash->get_hash(key);
 			std::uint32_t bucket_number = hash_value & (directory_size-1);
-			boost::unique_lock<shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
+			boost::unique_lock<boost::shared_mutex> local_exclusive_lock(bucket_mutexes[bucket_number]);
 			if (directory[bucket_number]) {
 				for (uint32_t i = 0; i < directory[bucket_number]->keys.size(); i++) {
 					if (directory[bucket_number]->keys[i] == key) { // Entry to be removed found
@@ -168,15 +163,15 @@ namespace multicore_hash {
 			local_exclusive_lock.unlock();
 		}
 
-		void range_scan(const key_t& start_key, const key_t* end_key, abstract_push_op& apo) override{
-			typedef std::tuple<key_t, value_t> hash_entry;
+		void range_scan(const std::string& start_key, const std::string* end_key, abstract_push_op& apo) override{
+			typedef std::tuple<std::string, std::string> hash_entry;
 
 			auto cmp = [](hash_entry a, hash_entry b) { return std::get<0>(a) > std::get<0>(b);};
 			std::priority_queue<hash_entry, std::vector<hash_entry>, decltype(cmp)> pri_queue(cmp);
 
 			// FULL SCAN
 			for (std::uint32_t i = 0; i < directory_size; i++) {
-				boost::shared_lock<shared_mutex> local_shared_lock(bucket_mutexes[i]);
+				boost::shared_lock<boost::shared_mutex> local_shared_lock(bucket_mutexes[i]);
 				for (std::uint32_t j = 0; j < directory[i]->keys.size(); j++) {
 					if (directory[i]->keys[j] >= start_key && directory[i]->keys[j] <= *end_key) {
 						pri_queue.push(std::make_tuple(directory[i]->keys[j], directory[i]->values[j]));
@@ -187,8 +182,8 @@ namespace multicore_hash {
 			// Apply push op
 			while(!pri_queue.empty()) {
 				hash_entry current = pri_queue.top();
-				key_t key     = std::get<0>(current);
-				value_t value = std::get<1>(current);
+				std::string key     = std::get<0>(current);
+				std::string value = std::get<1>(current);
 				const char* keyp = key.c_str();
 				if (!apo.invoke(keyp, key.length(), value)) {
 					return;
@@ -197,15 +192,15 @@ namespace multicore_hash {
 			}
 		}
 
-		void reverse_range_scan(const key_t& start_key, const key_t* end_key, abstract_push_op& apo) override{
-			typedef std::tuple<key_t, value_t> hash_entry;
+		void reverse_range_scan(const std::string& start_key, const std::string* end_key, abstract_push_op& apo) override{
+			typedef std::tuple<std::string, std::string> hash_entry;
 
 			auto cmp = [](hash_entry a, hash_entry b) { return std::get<0>(a) < std::get<0>(b);};
 			std::priority_queue<hash_entry, std::vector<hash_entry>, decltype(cmp)> pri_queue(cmp);
 
 			// FULL SCAN
 			for (std::uint32_t i = 0; i < directory_size; i++) {			
-				boost::shared_lock<shared_mutex> local_shared_lock(bucket_mutexes[i]);
+				boost::shared_lock<boost::shared_mutex> local_shared_lock(bucket_mutexes[i]);
 				for (std::uint32_t j = 0; j < directory[i]->keys.size(); j++) {
 					if (directory[i]->keys[j] >= start_key && directory[i]->keys[j] <= *end_key) {
 						pri_queue.push(std::make_tuple(directory[i]->keys[j], directory[i]->values[j]));
@@ -216,8 +211,8 @@ namespace multicore_hash {
 			// Apply push op
 			while(!pri_queue.empty()) {
 				hash_entry current = pri_queue.top();
-				key_t key     = std::get<0>(current);
-				value_t value = std::get<1>(current);
+				std::string key     = std::get<0>(current);
+				std::string value = std::get<1>(current);
 				const char* keyp = key.c_str();
 				if (!apo.invoke(keyp, key.length(), value)) {
 					return;
