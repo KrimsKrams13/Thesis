@@ -1,7 +1,7 @@
 reset
 
 # Specify hash type and test type
-name = "Tabulation8_cores"
+name = "Tabulation16_cores"
 
 # Set output image position
 set term png enhanced

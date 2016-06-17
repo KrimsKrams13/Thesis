@@ -1,8 +1,12 @@
 *.o
 *.aux
+*.ods
+*.ods#
 *.fdb_latexmk
 *.fls
 *.log
+*.out
+*.toc
 *.synctex.gz
 *.tex
 run

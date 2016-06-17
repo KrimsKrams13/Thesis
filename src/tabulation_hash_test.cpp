@@ -24,10 +24,6 @@ const std::uint8_t key_len_bytes = 64;
 multicore_hash::tabulation_hash<uint32_t, num_tables> *tab_hash = new multicore_hash::tabulation_hash<uint32_t, num_tables>();
 
 int stick_thread_to_core(pthread_t thread, int core_id) {
-   int num_cores = 32;
-   if (core_id < 0 || core_id >= num_cores)
-      return EINVAL;
-
    cpu_set_t cpuset;
    CPU_ZERO(&cpuset);
    CPU_SET(core_id, &cpuset);

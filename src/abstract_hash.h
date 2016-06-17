@@ -1,9 +1,9 @@
 #ifndef abstract_hash_h
 #define abstract_hash_h
 
-#include <cstring>
+#include <string>
 
-namespace multicore_hash{
+namespace multicore_hash {
 	template<typename value_t>
 	class abstract_hash
 	{
